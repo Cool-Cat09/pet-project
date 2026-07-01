@@ -1,0 +1,83 @@
+services:
+    rabbit:
+        image: rabbitmq:3-management
+        restart: always
+        ports:
+            - "15672:15672"
+            - "5672:5672"
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 15s
+    db:
+        image: postgres:latest
+        restart: always
+        env_file:
+            - .env
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        ports:
+            - "5433:5432"
+        volumes:
+            - pg_data:/var/lib/postgresql
+            - ./init-scripts:/docker-entrypoint-initdb.d
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d API"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    fastapi:
+        build: ./API_SCHEMAS
+        restart: always
+        ports:
+            - "8000:8000"
+        environment:
+            - PYTHONPATH=/app
+        env_file:
+            - API_SCHEMAS/api.env
+        working_dir: /app
+        command: sh -c "uv run alembic stamp head && uv run alembic revision --autogenerate && uv run alembic upgrade head && uv run uvicorn main:app --host 0.0.0.0 --port 8000"
+        depends_on:
+            rabbit:
+                condition: service_healthy
+            db:
+                condition: service_healthy
+
+
+    checker:
+        build: ./checker
+        restart: always
+        working_dir: /app
+        environment:
+            - PYTHONPATH=/app
+        command: sh -c "uv run alembic stamp head && uv run alembic revision --autogenerate && uv run alembic upgrade head && uv run python -m check"
+        depends_on:
+            rabbit:
+                condition: service_healthy
+            db:
+                condition: service_healthy
+
+
+    sendler:
+        build: ./sendler
+        restart: always
+        volumes:
+            - ./sendler:/app
+            - /app/.venv
+        environment:
+            - PYTHONDONTWRITEBYTECODE=1
+            - PYTHONUNBUFFERED=1
+        command: sh -c "uv run faststream run sendler:app"
+        depends_on:
+            rabbit:
+                condition: service_healthy
+
+
+volumes:
+    pg_data:
+    

@@ -1,0 +1,5 @@
+venv
+.git
+__pycahe__
+*.pyc
+.venv

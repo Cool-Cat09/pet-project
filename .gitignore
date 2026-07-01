@@ -1,0 +1,11 @@
+urls.db
+urls.db-shm
+urls.db-wal
+urls.db
+CursorUserSetup-x64-3.0.9.exe
+api.env
+checker.env
+sendler.env
+venv
+private_key.pem
+
