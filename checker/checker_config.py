@@ -41,6 +41,7 @@ class RabbitMQSettings(BaseSettings):
     rabbit_pass: str = 'guest'
     rabbit_login: str = 'guest'
     rabbit_host: str = 'rabbit'
+    rabbit_host_to_dev: str = 'localhost'
     rabbit_port: int = 5672
 
 
@@ -60,6 +61,13 @@ class RabbitMQSettings(BaseSettings):
         return (
             f'amqp://{self.rabbit_login}:{self.rabbit_pass}'
             f'@{self.rabbit_host}:{self.rabbit_port}'
+        )
+    
+    @property
+    def rabbit_url_to_dev(self):
+        return (
+            f'amqp://{self.rabbit_login}:{self.rabbit_pass}'
+            f'@{self.rabbit_host_to_dev}:{self.rabbit_port}'
         )
     
 

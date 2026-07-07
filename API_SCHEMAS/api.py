@@ -1,16 +1,14 @@
 from database.models import Item, User
-from models import CreatingItem, UpdateItem, CreatingUser, Creating_Session_Cookie 
+from models import CreatingItem, UpdateItem, CreatingUser
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from collections.abc import Sequence
-from datetime import datetime
 
-from typing import Any
 
 
 #api functions to works with BD
 
-async def creating_item(item: CreatingItem, user_id: int, user_email: str, ses: AsyncSession): 
+async def create_item(item: CreatingItem, user_id: int, user_email: str, ses: AsyncSession): 
     new_item = Item(**item.model_dump(mode='json'), user_id=user_id, user_email=user_email)
     ses.add(new_item)
 

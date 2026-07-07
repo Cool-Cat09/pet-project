@@ -1,18 +1,18 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, MappedAsDataclass
-from pydantic import HttpUrl, EmailStr
 from .engine import Base
 
 
 #database models
 
 
-class Item(MappedAsDataclass, Base):
+class Item_Checker(Base):
     __tablename__ = 'items'
 
-    id: Mapped[int]
-    url: Mapped[HttpUrl] = mapped_column(String)
+    url: Mapped[str] = mapped_column(String)
     name: Mapped[str]  
     need_price: Mapped[int]
     shop: Mapped[str]
-    email: Mapped[EmailStr] = mapped_column(String)
+    email: Mapped[str] = mapped_column(String)
+
+    id: Mapped[int] = mapped_column(primary_key=True)

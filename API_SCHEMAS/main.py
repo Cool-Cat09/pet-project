@@ -2,12 +2,12 @@
 
 from fastapi import FastAPI, Depends, HTTPException, status, Form, Response, Cookie
 import uvicorn
-from database.engine import Base, engine, Session
-from database.models import Item, User
+from .database.engine import Base, engine, Session
+from .database.models import Item, User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from api import creating_item, list_of_items, patching, create_user, search_user_by_name
+from api import create_item, list_of_items, patching, create_user, search_user_by_name
 from models import CreatingItem, UpdateItem, CreatingUser, UserSchema
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -113,7 +113,7 @@ async def authorization(response: Response, token: str = Cookie(alias=COOKIE_SES
 
 @app.post('/authentication')
 async def loging(user: UserSchema = Depends(authentication)):
-    return {'stauts': 200}
+    return status.HTTP_200_OK
 
 
 @app.get('/')
@@ -125,8 +125,8 @@ async def list_of_user_items(user: dict[str, Any] = Depends(authorization), db: 
 
 
 
-@app.delete('/del')
-async def delete(id: int, user: dict[str, Any] = Depends(authorization),  ses: AsyncSession = Depends(db_helper)):
+@app.delete('/delete_item')
+async def deleting_item(id: int, user: dict[str, Any] = Depends(authorization),  ses: AsyncSession = Depends(db_helper)):
     try:
         item = select(Item).filter_by(id=id, user_id=user['id'])
         del_item = await ses.execute(item)
@@ -135,7 +135,7 @@ async def delete(id: int, user: dict[str, Any] = Depends(authorization),  ses: A
         await ses.delete(result)
         await broker.request(message={'deleted': res_data}, queue=queue)
 
-        return {'status': 200}
+        return status.HTTP_200_OK
     except AttributeError:
         await ses.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -144,14 +144,14 @@ async def delete(id: int, user: dict[str, Any] = Depends(authorization),  ses: A
 
 
 @app.post('/create_item')
-async def creating(item: CreatingItem, user: dict[str, Any] = Depends(authorization), ses: AsyncSession = Depends(db_helper)):
+async def creating_item(item: CreatingItem, user: dict[str, Any] = Depends(authorization), ses: AsyncSession = Depends(db_helper)):
     try:
-        new_item = await creating_item(item=item, ses=ses, user_id=user['id'], user_email=user['sub'])
+        new_item = await create_item(item=item, ses=ses, user_id=user['id'], user_email=user['sub'])
         mes: dict[str, int] = item.model_dump(mode='json')
         mes['email'] = user['sub']
-        await broker.request(message={'created': mes, 'id': new_item.id, 'user_id': user['sub']}, queue=queue)
+        await broker.request(message={'created': mes, 'id': new_item.id, 'user_id': user['id']}, queue=queue)
 
-        return {'status': 200}
+        return status.HTTP_200_OK
     except IntegrityError:
         await ses.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='try to use another url')
@@ -164,7 +164,7 @@ async def patching_item(id: int, data: UpdateItem, user: dict[str, Any] = Depend
         await patching(id=id, data=data, ses=ses, user_id=user['id'])
         await broker.request(message={'patched': data, 'id': user['sub'], 'item_id': id}, queue=queue)
 
-        return {'stauts': 200}
+        return status.HTTP_200_OK
     except IntegrityError:
         await ses.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='invalid information')
@@ -176,7 +176,7 @@ async def creating_user(user: CreatingUser, ses: AsyncSession = Depends(db_helpe
         user.password = hash_pass(user.password)
         await create_user(user=user, ses=ses)
 
-        return {'status': 200}
+        return status.HTTP_200_OK
     except IntegrityError:
         await ses.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='email is existing')
@@ -186,8 +186,8 @@ async def creating_user(user: CreatingUser, ses: AsyncSession = Depends(db_helpe
 async def logout(response: Response, token: str = Cookie(alias=COOKIE_SESSION_ID_KEY)):
     try:
         response.delete_cookie(key=COOKIE_SESSION_ID_KEY)
-        return {'status': 200}
-    except Exception as e:
+        return status.HTTP_200_OK
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

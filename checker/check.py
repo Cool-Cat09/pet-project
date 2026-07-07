@@ -1,13 +1,14 @@
 import httpx
 import asyncio
-from database.engine import ses_control, engine, Base, ses_control_db
+from checker import ses_control, engine, ses_control_db
 from sqlalchemy import select
-from database.models import Item
+from . import Item_Checker
 from check_base import PARAMS
 from faststream.rabbit import RabbitBroker, RabbitQueue
 from faststream import FastStream, Depends
 from sqlalchemy.ext.asyncio import AsyncSession 
 from pydantic import EmailStr
+import inspect
 
 from typing import Any
 
@@ -54,7 +55,7 @@ async def db_checker():
     async with httpx.AsyncClient(verify=False) as client:
         while True:
             async with ses_control() as session:
-                query = select(Item)
+                query = select(Item_Checker)
                 result = await session.execute(query)
                 items = result.scalars().all()
                 for item in items:
@@ -74,7 +75,7 @@ async def db_checker():
                                 await broker.publish(message={'status': 'fell', 'email': item.email}, queue='main')
                                 log.info('publish')
                         except Exception as e:
-                            print(e)
+                            log.info(e)
                         
 
                 
@@ -88,7 +89,7 @@ async def insert_in_db(msg: dict[str, Any], ses: AsyncSession = Depends(ses_cont
 
     if 'created' in msg:
         data = msg['created']
-        new_item = Item(name=data.get('name'), url=data.get('url'), shop=data.get('shop'), need_price=data.get('need_price'), id=msg['id'], email=data.get('email'))
+        new_item = Item_Checker(name=data.get('name'), url=data.get('url'), shop=data.get('shop'), need_price=data.get('need_price'), id=msg['id'], email=data.get('email'))
         ses.add(new_item)
         await ses.commit()
 
@@ -98,7 +99,7 @@ async def insert_in_db(msg: dict[str, Any], ses: AsyncSession = Depends(ses_cont
     if 'deleted' in msg:
         data = msg['deleted']
         t_id = data.get('id')
-        deletion = select(Item).filter(Item.id==t_id)
+        deletion = select(Item_Checker).filter(Item_Checker.id==t_id)
         del_item = await ses.execute(deletion)
         res = del_item.scalars().first()
         await ses.delete(res)
@@ -110,7 +111,7 @@ async def insert_in_db(msg: dict[str, Any], ses: AsyncSession = Depends(ses_cont
     if 'patched' in msg:
         data = msg['patched']
         item_id: int = msg['item_id']
-        query = select(Item).filter_by(id=item_id)
+        query = select(Item_Checker).filter_by(id=item_id)
         item = await ses.execute(query)
         item = item.scalar_one_or_none()
 

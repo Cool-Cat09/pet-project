@@ -1,6 +1,4 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import FilePath
-from pathlib import Path
 
 
 class DatabaseSettings(BaseSettings):
@@ -42,6 +40,7 @@ class RabbitMQSettings(BaseSettings):
     rabbit_pass: str = 'guest'
     rabbit_login: str = 'guest'
     rabbit_host: str = 'rabbit'
+    rabbit_host_to_dev: str = 'localhost'
     rabbit_port: int = 5672
 
 
@@ -62,10 +61,17 @@ class RabbitMQSettings(BaseSettings):
             f'@{self.rabbit_host}:{self.rabbit_port}'
         )
     
+    @property
+    def rabbit_url_to_dev(self):
+        return (
+            f'amqp://{self.rabbit_login}:{self.rabbit_pass}'
+            f'@{self.rabbit_host_to_dev}:{self.rabbit_port}'
+        )
+    
 
 class JWT_Issuence_Settings(BaseSettings):
-    private_key_path: FilePath = Path('private_key.pem')
-    public_key_path: FilePath = Path('public_key.pem')
+    private_key_path: str = 'private_key.pem'
+    public_key_path: str = 'public_key.pem'
     algorithm: str = 'RS256'
     access_token_expire: int = 23
     refresh_token_expire: int = 43200

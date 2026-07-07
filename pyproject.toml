@@ -5,5 +5,24 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "fastapi>=0.139.0",
+    "faststream[rabbitmq]>=0.7.1",
+    "httpx>=0.28.1",
+    "pika>=1.4.1",
     "pyjwt[cryptography]>=2.12.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-env>=1.6.0",
+    "pytest-pythonpath>=0.7.3",
+    "testcontainers[postgres]>=4.14.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.uv.workspace]
+members = [
+    "tests",
 ]

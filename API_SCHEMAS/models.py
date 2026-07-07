@@ -5,10 +5,18 @@ from datetime import datetime
 #Pydantic models to annotations 
 
 class CreatingItem(BaseModel):
-    url: HttpUrl 
+    url: HttpUrl | str
     name: str 
     need_price: int 
     shop: str 
+
+class CreatingItemDev(BaseModel):
+    url: HttpUrl | str
+    name: str
+    need_price: int
+    shop: str
+    user_id: int
+    user_email: EmailStr
     
 class UpdateItem(BaseModel):
     url: HttpUrl | None = None

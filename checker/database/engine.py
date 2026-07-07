@@ -10,8 +10,7 @@ from checker_config import database_settings
 URL = database_settings.database_url
 
 class Base(DeclarativeBase):
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    pass
 
 engine = create_async_engine(URL, echo=True)
 Session = async_sessionmaker(bind=engine)
