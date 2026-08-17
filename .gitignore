@@ -11,4 +11,6 @@ private_key.pem
 **/__pycache__/
 *.py[cod]
 .env
+server.crt
+server.key
 
