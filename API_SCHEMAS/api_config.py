@@ -32,7 +32,7 @@ class DatabaseSettings(BaseSettings):
         """using to work with bd in manual mode"""
         return (
             f'postgresql+asyncpg://{self.database_user}:{self.database_pass}'
-            f'@{self.database_host_dev}:{self.database_port}/{self.database_name}'
+            f'@{self.database_host_dev}:{self.database_port_dev}/{self.database_name}'
         )
 
 

@@ -21,7 +21,7 @@ from alembic import context
 from checker_config import database_settings
 from database.engine import Base
 
-from database.models import Item
+from database.models import Item_Checker
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

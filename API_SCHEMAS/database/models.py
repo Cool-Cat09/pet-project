@@ -24,5 +24,5 @@ class User(Base):
     name: Mapped[str] = mapped_column(unique=True)
     email: Mapped[EmailStr] = mapped_column(String, unique=True)
     password: Mapped[str]
-    items: Mapped[list['Item']] = relationship(back_populates='user')
+    items: Mapped[list['Item']] = relationship(back_populates='users')
 

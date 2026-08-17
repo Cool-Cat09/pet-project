@@ -12,7 +12,7 @@ services:
             retries: 5
             start_period: 15s
     db:
-        image: postgres:latest
+        image: postgres:alpine
         restart: always
         env_file:
             - .env
@@ -24,9 +24,10 @@ services:
             - "5433:5432"
         volumes:
             - pg_data:/var/lib/postgresql
-            - ./init-scripts:/docker-entrypoint-initdb.d
+            - ./sql-scripts:/docker-entrypoint-initdb.d/
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres -d API"]
+            test:
+                ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -34,20 +35,31 @@ services:
     fastapi:
         build: ./API_SCHEMAS
         restart: always
+        working_dir: /app
         ports:
             - "8000:8000"
         environment:
             - PYTHONPATH=/app
         env_file:
             - API_SCHEMAS/api.env
-        working_dir: /app
-        command: sh -c "uv run alembic stamp head && uv run alembic revision --autogenerate && uv run alembic upgrade head && uv run uvicorn main:app --host 0.0.0.0 --port 8000"
+        command: sh -c "uv sync --frozen && uv run alembic upgrade head && uv run python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "python",
+                    "-c",
+                    "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs', timeout=2)",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 5s
         depends_on:
             rabbit:
                 condition: service_healthy
             db:
                 condition: service_healthy
-
 
     checker:
         build: ./checker
@@ -55,29 +67,39 @@ services:
         working_dir: /app
         environment:
             - PYTHONPATH=/app
-        command: sh -c "uv run alembic stamp head && uv run alembic revision --autogenerate && uv run alembic upgrade head && uv run python -m check"
+        command: sh -c "uv sync && uv run alembic upgrade head && uv run python -m check"
         depends_on:
             rabbit:
                 condition: service_healthy
             db:
                 condition: service_healthy
 
-
     sendler:
         build: ./sendler
         restart: always
-        volumes:
-            - ./sendler:/app
-            - /app/.venv
         environment:
             - PYTHONDONTWRITEBYTECODE=1
             - PYTHONUNBUFFERED=1
-        command: sh -c "uv run faststream run sendler:app"
+            - UV_PROJECT_ENVIRONMENT=/app/.venv
+        command: sh -c "uv sync && uv run python -m faststream run sendler:app"
         depends_on:
             rabbit:
                 condition: service_healthy
 
+    nginx:
+        image: nginx:alpine
+        restart: always
+        ports:
+            - 443:443
+        volumes:
+            - ./1nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./server.crt:/etc/ssl/certs/server.crt
+            - ./server.key:/etc/ssl/private/server.key
+
+
+        depends_on:
+            fastapi:
+                condition: service_healthy
 
 volumes:
     pg_data:
-    

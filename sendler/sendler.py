@@ -5,7 +5,7 @@ from faststream.rabbit import RabbitBroker, RabbitQueue
 from faststream import FastStream
 from pydantic import BaseModel, EmailStr
 
-from .sendler_config import sendler_settings, rabbit_settings
+from sendler_config import sendler_settings, rabbit_settings
 from log_conf import logger
 
 #send email-message to user email 

@@ -2,8 +2,8 @@
 
 from fastapi import FastAPI, Depends, HTTPException, status, Form, Response, Cookie
 import uvicorn
-from .database.engine import Base, engine, Session
-from .database.models import Item, User
+from database.engine import Base, engine, Session
+from database.models import Item, User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -133,7 +133,7 @@ async def deleting_item(id: int, user: dict[str, Any] = Depends(authorization), 
         result = del_item.scalars().first()
         res_data = {'id': result.id}
         await ses.delete(result)
-        await broker.request(message={'deleted': res_data}, queue=queue)
+        await broker.publish(message={'deleted': res_data}, queue=queue)
 
         return status.HTTP_200_OK
     except AttributeError:
@@ -149,7 +149,7 @@ async def creating_item(item: CreatingItem, user: dict[str, Any] = Depends(autho
         new_item = await create_item(item=item, ses=ses, user_id=user['id'], user_email=user['sub'])
         mes: dict[str, int] = item.model_dump(mode='json')
         mes['email'] = user['sub']
-        await broker.request(message={'created': mes, 'id': new_item.id, 'user_id': user['id']}, queue=queue)
+        await broker.publish(message={'created': mes, 'id': new_item.id, 'user_id': user['id']}, queue=queue)
 
         return status.HTTP_200_OK
     except IntegrityError:
@@ -162,7 +162,7 @@ async def creating_item(item: CreatingItem, user: dict[str, Any] = Depends(autho
 async def patching_item(id: int, data: UpdateItem, user: dict[str, Any] = Depends(authorization), ses: AsyncSession = Depends(db_helper)):
     try:
         await patching(id=id, data=data, ses=ses, user_id=user['id'])
-        await broker.request(message={'patched': data, 'id': user['sub'], 'item_id': id}, queue=queue)
+        await broker.publish(message={'patched': data, 'id': user['sub'], 'item_id': id}, queue=queue)
 
         return status.HTTP_200_OK
     except IntegrityError:
